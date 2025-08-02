@@ -1,0 +1,146 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dragon vs Tiger Predictor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-6">🐉 Dragon vs 🐯 Tiger Predictor</h1><div class="bg-gray-800 rounded-xl p-4 shadow-lg">
+  <h2 class="text-xl font-semibold mb-2">➕ Add Game Result</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <input id="dragonCard" type="text" placeholder="Dragon Card (e.g. 5, Q)" class="p-2 rounded bg-gray-700" />
+    <input id="tigerCard" type="text" placeholder="Tiger Card (e.g. 7, K)" class="p-2 rounded bg-gray-700" />
+  </div>
+  <button onclick="addGameResult()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    ➕ Add Entry
+  </button>
+</div>
+
+<div class="mt-6 bg-gray-800 rounded-xl p-4">
+  <h2 class="text-xl font-semibold mb-2">📜 Game History</h2>
+  <ul id="historyList" class="list-disc list-inside text-sm"></ul>
+</div>
+
+<div class="mt-6 bg-gray-800 rounded-xl p-4">
+  <h2 class="text-xl font-semibold mb-2">🔮 Prediction</h2>
+  <p id="predictionOutput" class="text-lg font-medium text-green-400"></p>
+</div>
+
+<div class="mt-6 bg-gray-800 rounded-xl p-4">
+  <h2 class="text-xl font-semibold mb-2">📊 Prediction Accuracy</h2>
+  <p id="accuracyOutput" class="text-sm"></p>
+  <button onclick="downloadLog()" class="mt-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+    ⬇️ Download Logs
+  </button>
+</div>
+
+  </div>  <script>
+    const history = [];
+    const predictionLogs = [];
+    let predictionStats = { correct: 0, incorrect: 0 };
+    let lastPrediction = null;
+
+    function cardValue(card) {
+      const faceCards = { 'A': 1, 'J': 11, 'Q': 12, 'K': 13 };
+      return faceCards[card.toUpperCase()] || parseInt(card);
+    }
+
+    function addGameResult() {
+      const dragonCard = document.getElementById("dragonCard").value.trim();
+      const tigerCard = document.getElementById("tigerCard").value.trim();
+
+      if (!dragonCard || !tigerCard) {
+        alert("Please enter both cards");
+        return;
+      }
+
+      const dragonValue = cardValue(dragonCard);
+      const tigerValue = cardValue(tigerCard);
+
+      let winner;
+      if (dragonValue > tigerValue) winner = "Dragon";
+      else if (tigerValue > dragonValue) winner = "Tiger";
+      else winner = "Tie";
+
+      const entry = { dragonCard, tigerCard, winner };
+      history.push(entry);
+
+      if (lastPrediction) {
+        if (lastPrediction === winner) predictionStats.correct++;
+        else predictionStats.incorrect++;
+        predictionLogs.push(`Prediction: ${lastPrediction}, Actual: ${winner}`);
+      }
+
+      updateHistory();
+      predictOutcome();
+      updateAccuracy();
+    }
+
+    function updateHistory() {
+      const list = document.getElementById("historyList");
+      list.innerHTML = "";
+      history.slice(-10).forEach((entry, index) => {
+        const item = document.createElement("li");
+        item.textContent = `#${history.length - 10 + index + 1}: 🐉 ${entry.dragonCard} vs 🐯 ${entry.tigerCard} → 🏆 ${entry.winner}`;
+        list.appendChild(item);
+      });
+    }
+
+    function predictOutcome() {
+      if (history.length < 3) {
+        lastPrediction = null;
+        document.getElementById("predictionOutput").textContent = "Add at least 3 entries to generate prediction...";
+        return;
+      }
+
+      const lastWinners = history.slice(-5).map(e => e.winner);
+      const dragonWins = lastWinners.filter(w => w === "Dragon").length;
+      const tigerWins = lastWinners.filter(w => w === "Tiger").length;
+      const ties = lastWinners.filter(w => w === "Tie").length;
+
+      let prediction = "";
+      if (dragonWins >= 3) {
+        prediction = "⚠️ High chance of 🐯 Tiger Win (Dragon streak)";
+        lastPrediction = "Tiger";
+      } else if (tigerWins >= 3) {
+        prediction = "⚠️ High chance of 🐉 Dragon Win (Tiger streak)";
+        lastPrediction = "Dragon";
+      } else if (ties >= 2) {
+        prediction = "🤝 Tie likely again (recent tie trend)";
+        lastPrediction = "Tie";
+      } else {
+        prediction = "🤔 Outcome uncertain. May be random or alternating.";
+        lastPrediction = null;
+      }
+
+      document.getElementById("predictionOutput").textContent = prediction;
+    }
+
+    function updateAccuracy() {
+      const total = predictionStats.correct + predictionStats.incorrect;
+      const percent = total > 0 ? ((predictionStats.correct / total) * 100).toFixed(1) : 0;
+      document.getElementById("accuracyOutput").textContent = `✅ Correct: ${predictionStats.correct}, ❌ Wrong: ${predictionStats.incorrect}, 🎯 Accuracy: ${percent}%`;
+    }
+
+    function downloadLog() {
+      const logText = [
+        `Prediction Logs:`,
+        `Correct: ${predictionStats.correct}`,
+        `Incorrect: ${predictionStats.incorrect}`,
+        `Accuracy: ${(predictionStats.correct / (predictionStats.correct + predictionStats.incorrect) * 100).toFixed(1)}%`,
+        `\n--- Entries ---`,
+        ...predictionLogs
+      ].join("\n");
+
+      const blob = new Blob([logText], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "prediction_logs.txt";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script></body>
+</html>
