@@ -1,42 +1,70 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dragon vs Tiger Predictor</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-4">
-  <div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold text-center mb-6">🐉 Dragon vs 🐯 Tiger Predictor</h1><div class="bg-gray-800 rounded-xl p-4 shadow-lg">
-  <h2 class="text-xl font-semibold mb-2">➕ Add Game Result</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <input id="dragonCard" type="text" placeholder="Dragon Card (e.g. 5, Q)" class="p-2 rounded bg-gray-700" />
-    <input id="tigerCard" type="text" placeholder="Tiger Card (e.g. 7, K)" class="p-2 rounded bg-gray-700" />
+<body class="bg-gradient-to-b from-gray-900 to-black text-white min-h-screen p-4 font-sans">
+
+  <div class="max-w-2xl mx-auto fade-in">
+    <h1 class="text-4xl font-bold text-center mb-6 text-yellow-400">🐉 Dragon vs 🐯 Tiger Predictor</h1>
+
+    <!-- Add Game Result -->
+    <div class="bg-gray-800 rounded-xl p-4 shadow-lg mb-6">
+      <h2 class="text-xl font-semibold mb-3">➕ Add Game Result</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <input id="dragonCard" type="text" placeholder="Dragon Card (e.g. 5, Q)" class="p-3 rounded bg-gray-700 text-black text-lg" />
+        <input id="tigerCard" type="text" placeholder="Tiger Card (e.g. 7, K)" class="p-3 rounded bg-gray-700 text-black text-lg" />
+      </div>
+      <button onclick="addGameResult()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        ➕ Add Entry
+      </button>
+    </div>
+
+    <!-- Game History -->
+    <div class="bg-gray-800 rounded-xl p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">📜 Game History</h2>
+      <ul id="historyList" class="list-disc list-inside text-sm"></ul>
+    </div>
+
+    <!-- Prediction -->
+    <div class="bg-gray-800 rounded-xl p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">🔮 Prediction</h2>
+      <p id="predictionOutput" class="text-lg font-medium text-green-400"></p>
+    </div>
+
+    <!-- Accuracy + Actions -->
+    <div class="bg-gray-800 rounded-xl p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">📊 Prediction Accuracy</h2>
+      <p id="accuracyOutput" class="text-sm mb-2"></p>
+      <div class="flex gap-3 flex-wrap">
+        <button onclick="downloadLog()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+          ⬇️ Download Logs
+        </button>
+        <button onclick="clearHistory()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+          🧹 Clear History
+        </button>
+      </div>
+    </div>
+
+    <!-- Developer Credit -->
+    <div class="text-center text-gray-500 mt-6 text-sm">
+      Made with ❤️ by <span class="text-blue-400 font-semibold">@cyber_unkit</span>
+    </div>
   </div>
-  <button onclick="addGameResult()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-    ➕ Add Entry
-  </button>
-</div>
 
-<div class="mt-6 bg-gray-800 rounded-xl p-4">
-  <h2 class="text-xl font-semibold mb-2">📜 Game History</h2>
-  <ul id="historyList" class="list-disc list-inside text-sm"></ul>
-</div>
-
-<div class="mt-6 bg-gray-800 rounded-xl p-4">
-  <h2 class="text-xl font-semibold mb-2">🔮 Prediction</h2>
-  <p id="predictionOutput" class="text-lg font-medium text-green-400"></p>
-</div>
-
-<div class="mt-6 bg-gray-800 rounded-xl p-4">
-  <h2 class="text-xl font-semibold mb-2">📊 Prediction Accuracy</h2>
-  <p id="accuracyOutput" class="text-sm"></p>
-  <button onclick="downloadLog()" class="mt-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
-    ⬇️ Download Logs
-  </button>
-</div>
-
-  </div>  <script>
+  <script>
     const history = [];
     const predictionLogs = [];
     let predictionStats = { correct: 0, incorrect: 0 };
@@ -44,15 +72,29 @@
 
     function cardValue(card) {
       const faceCards = { 'A': 1, 'J': 11, 'Q': 12, 'K': 13 };
-      return faceCards[card.toUpperCase()] || parseInt(card);
+      const val = faceCards[card.toUpperCase()] || parseInt(card);
+      return isNaN(val) ? null : val;
+    }
+
+    function isValidCard(card) {
+      const valid = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+      return valid.includes(card.toUpperCase());
     }
 
     function addGameResult() {
-      const dragonCard = document.getElementById("dragonCard").value.trim();
-      const tigerCard = document.getElementById("tigerCard").value.trim();
+      const dragonCardInput = document.getElementById("dragonCard");
+      const tigerCardInput = document.getElementById("tigerCard");
+
+      const dragonCard = dragonCardInput.value.trim();
+      const tigerCard = tigerCardInput.value.trim();
 
       if (!dragonCard || !tigerCard) {
         alert("Please enter both cards");
+        return;
+      }
+
+      if (!isValidCard(dragonCard) || !isValidCard(tigerCard)) {
+        alert("Please enter valid cards like A, 2–10, J, Q, K");
         return;
       }
 
@@ -76,6 +118,15 @@
       updateHistory();
       predictOutcome();
       updateAccuracy();
+
+      // Save to localStorage
+      localStorage.setItem("dvt_history", JSON.stringify(history));
+      localStorage.setItem("dvt_stats", JSON.stringify(predictionStats));
+
+      // Clear input fields
+      dragonCardInput.value = "";
+      tigerCardInput.value = "";
+      dragonCardInput.focus();
     }
 
     function updateHistory() {
@@ -142,5 +193,37 @@
       link.click();
       document.body.removeChild(link);
     }
-  </script></body>
+
+    function clearHistory() {
+      if (confirm("Are you sure you want to clear the history?")) {
+        history.length = 0;
+        predictionLogs.length = 0;
+        predictionStats = { correct: 0, incorrect: 0 };
+        localStorage.clear();
+        updateHistory();
+        updateAccuracy();
+        document.getElementById("predictionOutput").textContent = "";
+      }
+    }
+
+    // Load from localStorage
+    window.onload = () => {
+      const savedHistory = JSON.parse(localStorage.getItem("dvt_history") || "[]");
+      const savedStats = JSON.parse(localStorage.getItem("dvt_stats") || null);
+
+      if (savedHistory.length > 0) {
+        history.push(...savedHistory);
+        if (savedStats) predictionStats = savedStats;
+        updateHistory();
+        predictOutcome();
+        updateAccuracy();
+      }
+
+      // Submit with Enter key
+      document.getElementById("tigerCard").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") addGameResult();
+      });
+    };
+  </script>
+</body>
 </html>
